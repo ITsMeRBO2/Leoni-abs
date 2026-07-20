@@ -14,6 +14,8 @@ SECRET_KEY = config('SECRET_KEY', default=get_random_secret_key())
 
 DEBUG = config('DEBUG', default=False, cast=bool)
 
+FRONTEND_URL = config('FRONTEND_URL', default='/admin/')
+
 ALLOWED_HOSTS = [
     host.strip()
     for host in config(
