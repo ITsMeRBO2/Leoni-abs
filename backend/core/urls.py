@@ -1,10 +1,9 @@
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import path, include
-from django.views.generic import RedirectView
-from django.conf import settings
 
 urlpatterns = [
-    path('', RedirectView.as_view(url=settings.FRONTEND_URL, permanent=False)),
+    path('', lambda request: HttpResponse('Leoni API is running', content_type='text/plain')),
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
 ]
