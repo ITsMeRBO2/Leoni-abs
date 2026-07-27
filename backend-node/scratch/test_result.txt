@@ -1,0 +1,10 @@
+Fetching existing records from DB...
+Processing Excel rows in memory...
+Writing to DB...
+- Employees to create: 733
+- Employees to update: 0
+- Attendances to create: 733
+- Attendances to update: 0
+- Departures to create: 0
+- Departures to update: 0
+All operations succeeded in 1078ms!

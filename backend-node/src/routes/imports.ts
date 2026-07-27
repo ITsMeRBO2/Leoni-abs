@@ -90,117 +90,235 @@ router.post('/upload/', upload.single('file'), async (req: any, res: any) => {
       return '';
     };
 
-    // Transaction for performance
-    await prisma.$transaction(async (tx) => {
-      for (const row of data) {
-        const affectationVal = getVal(row, ['Affectation', 'affectation', 'affect', 'AFFECTATION']);
-        const affNorm = affectationVal.replace(/[\s-]/g, '').toLowerCase();
-        
-        let famille = '';
-        if (ALLOWED_MAPPING[affNorm]) {
-          famille = ALLOWED_MAPPING[affNorm];
-        } else {
-          continue;
-        }
+    console.log('Fetching existing records from DB...');
+    const existingEmployees = await prisma.employee.findMany();
+    const employeeMap = new Map(existingEmployees.map(e => [e.mle, e]));
 
-        let mle = getVal(row, ['Mle', 'MLE', 'mle', 'Matricule', 'matricule']);
-        let mle_2 = getVal(row, ['MLE']);
-        
-        if (!mle || mle.toLowerCase() === 'nan') continue;
+    const existingAttendances = await prisma.attendance.findMany({
+      where: { date: importDate }
+    });
+    const attendanceMap = new Map(existingAttendances.map(a => [a.employeeId, a]));
 
-        const nom_prenom = getVal(row, ['Nom & prénom', 'Nom & prenom', 'Nom et prénom', 'NOM & PRENOM', 'Nom', 'nom']);
-        const cc = getVal(row, ['CC', 'cc']);
-        const contrat = getVal(row, ['Contrat', 'contrat']);
-        const seg_val = getVal(row, ['SEG', 'seg']);
+    const existingDepartures = await prisma.departure.findMany();
+    const departureMap = new Map(existingDepartures.map(d => [d.employeeId, d]));
 
-        await tx.employee.upsert({
-          where: { mle },
-          update: {
-            mle_2, nom_prenom, famille, seg: seg_val, affectation: affectationVal, cc, contrat
-          },
-          create: {
-            mle, mle_2, nom_prenom, famille, seg: seg_val, affectation: affectationVal, cc, contrat
-          }
-        });
+    const employeesToCreate: any[] = [];
+    const employeesToUpdate: any[] = [];
 
-        // Pointage is in the last column
-        const keys = Object.keys(row);
-        const pointageVal = row[keys[keys.length - 1]];
-        let pointage = pointageVal ? String(pointageVal).trim() : '';
-        
-        let heures_travaillees = 0.0;
-        if (!pointage || pointage === '0' || pointage.toLowerCase() === 'nan') {
-          pointage = "0";
-        } else {
-          try {
-            const parts = pointage.split(/\s+/);
-            if (parts.length >= 2 && parts.length % 2 === 0) {
-              for (let j = 0; j < parts.length; j += 2) {
-                const t1Str = parts[j];
-                const t2Str = parts[j+1];
-                const t1 = new Date(`1970-01-01T${t1Str}:00Z`).getTime();
-                let t2 = new Date(`1970-01-01T${t2Str}:00Z`).getTime();
-                if (t2 < t1) {
-                  t2 += 24 * 60 * 60 * 1000; // Night shift
+    const attendancesToCreate: any[] = [];
+    const attendancesToUpdate: any[] = [];
+
+    const departuresToCreate: any[] = [];
+    const departuresToUpdate: any[] = [];
+
+    console.log('Processing Excel rows in memory...');
+
+    for (const row of data) {
+      const affectationVal = getVal(row, ['Affectation', 'affectation', 'affect', 'AFFECTATION']);
+      const affNorm = affectationVal.replace(/[\s-]/g, '').toLowerCase();
+      
+      let famille = '';
+      if (ALLOWED_MAPPING[affNorm]) {
+        famille = ALLOWED_MAPPING[affNorm];
+      } else {
+        continue;
+      }
+
+      let mle = getVal(row, ['Mle', 'MLE', 'mle', 'Matricule', 'matricule']);
+      let mle_2 = getVal(row, ['MLE']);
+      
+      if (!mle || mle.toLowerCase() === 'nan') continue;
+
+      const nom_prenom = getVal(row, ['Nom & prénom', 'Nom & prenom', 'Nom et prénom', 'NOM & PRENOM', 'Nom', 'nom']);
+      const cc = getVal(row, ['CC', 'cc']);
+      const contrat = getVal(row, ['Contrat', 'contrat']);
+      const seg_val = getVal(row, ['SEG', 'seg']);
+
+      // Check if Employee needs create or update
+      const existingEmp = employeeMap.get(mle);
+      let consecutive = existingEmp ? existingEmp.consecutive_absences : 0;
+
+      const empData = {
+        mle,
+        mle_2,
+        nom_prenom,
+        famille,
+        seg: seg_val,
+        affectation: affectationVal,
+        cc,
+        contrat,
+        consecutive_absences: consecutive
+      };
+
+      const keys = Object.keys(row);
+      const pointageVal = row[keys[keys.length - 1]];
+      let pointage = pointageVal ? String(pointageVal).trim() : '';
+      
+      let heures_travaillees = 0.0;
+      if (!pointage || pointage === '0' || pointage.toLowerCase() === 'nan') {
+        pointage = "0";
+      } else {
+        try {
+          const parts = pointage.split(/\s+/);
+          if (parts.length >= 2 && parts.length % 2 === 0) {
+            for (let j = 0; j < parts.length; j += 2) {
+              const t1Str = parts[j];
+              const t2Str = parts[j+1];
+              
+              const parseTime = (timeStr: string) => {
+                const parts = timeStr.split(':');
+                if (parts.length >= 2) {
+                  const hrs = parseInt(parts[0], 10);
+                  const mins = parseInt(parts[1], 10);
+                  return hrs * 60 + mins;
                 }
-                heures_travaillees += (t2 - t1) / (1000 * 3600.0);
+                return NaN;
+              };
+              
+              const t1 = parseTime(t1Str);
+              let t2 = parseTime(t2Str);
+              
+              if (!isNaN(t1) && !isNaN(t2)) {
+                let diff = t2 - t1;
+                if (t2 < t1) {
+                  diff += 24 * 60; // Night shift
+                }
+                heures_travaillees += diff / 60.0;
               }
             }
-          } catch (e) {
-            heures_travaillees = 0.0;
+          }
+        } catch (e) {
+          heures_travaillees = 0.0;
+        }
+      }
+
+      let statut = 'Absent';
+      if (isPublicHoliday) {
+        statut = 'Ferie';
+      } else if (familiesOff.includes(famille)) {
+        statut = 'Repos';
+      } else if (heures_travaillees >= minHours) {
+        statut = 'Present';
+      }
+
+      // Update consecutive absences
+      if (statut === 'Present') {
+        consecutive = 0;
+      } else if (statut === 'Absent') {
+        consecutive += 1;
+      }
+      empData.consecutive_absences = consecutive;
+
+      if (!existingEmp) {
+        employeesToCreate.push(empData);
+        employeeMap.set(mle, empData as any); // Track in map
+      } else {
+        if (
+          existingEmp.mle_2 !== mle_2 ||
+          existingEmp.nom_prenom !== nom_prenom ||
+          existingEmp.famille !== famille ||
+          existingEmp.seg !== seg_val ||
+          existingEmp.affectation !== affectationVal ||
+          existingEmp.cc !== cc ||
+          existingEmp.contrat !== contrat ||
+          existingEmp.consecutive_absences !== consecutive
+        ) {
+          employeesToUpdate.push(empData);
+        }
+      }
+
+      // Attendance
+      const existingAtt = attendanceMap.get(mle);
+      const attData = {
+        employeeId: mle,
+        date: importDate,
+        heures_travaillees,
+        statut
+      };
+
+      if (!existingAtt) {
+        attendancesToCreate.push(attData);
+      } else {
+        if (existingAtt.heures_travaillees !== heures_travaillees || existingAtt.statut !== statut) {
+          attendancesToUpdate.push({ id: existingAtt.id, ...attData });
+        }
+      }
+
+      // Departure logic
+      if (consecutive >= 4 && statut === 'Absent') {
+        const existingDep = departureMap.get(mle);
+        const depData = {
+          employeeId: mle,
+          absences_count: consecutive,
+          date_added: importDate
+        };
+
+        if (!existingDep) {
+          departuresToCreate.push(depData);
+        } else {
+          if (existingDep.absences_count !== consecutive) {
+            departuresToUpdate.push({ id: existingDep.id, ...depData });
           }
         }
+      }
 
-        let statut = 'Absent';
-        if (isPublicHoliday) {
-          statut = 'Ferie';
-        } else if (familiesOff.includes(famille)) {
-          statut = 'Repos';
-        } else if (heures_travaillees >= minHours) {
-          statut = 'Present';
-        }
+      recordsCreated++;
+    }
 
-        await tx.attendance.upsert({
-          where: { employeeId_date: { employeeId: mle, date: importDate } },
-          update: { heures_travaillees, statut },
-          create: { employeeId: mle, date: importDate, heures_travaillees, statut }
+    console.log('Writing to DB...');
+    await prisma.$transaction(async (tx) => {
+      // 1. Create Employees
+      if (employeesToCreate.length > 0) {
+        await tx.employee.createMany({
+          data: employeesToCreate,
+          skipDuplicates: true
         });
+      }
 
-        const emp = await tx.employee.findUnique({ where: { mle } });
-        if (emp) {
-          let consecutive = emp.consecutive_absences;
-          if (statut === 'Present') {
-            consecutive = 0;
-          } else if (statut === 'Absent') {
-            consecutive += 1;
-          }
-          await tx.employee.update({
-            where: { mle },
-            data: { consecutive_absences: consecutive }
-          });
+      // 2. Update Employees
+      for (const emp of employeesToUpdate) {
+        await tx.employee.update({
+          where: { mle: emp.mle },
+          data: emp
+        });
+      }
 
-          if (consecutive >= 4 && statut === 'Absent') {
-            const existingDep = await tx.departure.findFirst({ where: { employeeId: mle } });
-            if (existingDep) {
-              await tx.departure.update({
-                where: { id: existingDep.id },
-                data: { absences_count: consecutive }
-              });
-            } else {
-              await tx.departure.create({
-                data: { employeeId: mle, absences_count: consecutive, date_added: importDate }
-              });
-            }
-          }
-        }
+      // 3. Create Attendances
+      if (attendancesToCreate.length > 0) {
+        await tx.attendance.createMany({
+          data: attendancesToCreate,
+          skipDuplicates: true
+        });
+      }
 
-        recordsCreated++;
+      // 4. Update Attendances
+      for (const att of attendancesToUpdate) {
+        await tx.attendance.update({
+          where: { id: att.id },
+          data: { heures_travaillees: att.heures_travaillees, statut: att.statut }
+        });
+      }
+
+      // 5. Create Departures
+      if (departuresToCreate.length > 0) {
+        await tx.departure.createMany({
+          data: departuresToCreate,
+          skipDuplicates: true
+        });
+      }
+
+      // 6. Update Departures
+      for (const dep of departuresToUpdate) {
+        await tx.departure.update({
+          where: { id: dep.id },
+          data: { absences_count: dep.absences_count }
+        });
       }
     });
 
     await prisma.importHistory.create({
       data: {
-        userId: req.user?.user_id || null, // from auth middleware
+        userId: req.user?.user_id || null,
         status: 'Success',
         records_processed: recordsCreated,
         file_name: file.originalname
