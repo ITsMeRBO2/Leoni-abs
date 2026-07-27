@@ -10,6 +10,7 @@ import dashboardRoutes from './routes/dashboard';
 import importsRoutes from './routes/imports';
 import exportRoutes from './routes/export';
 import { authenticateToken } from './middlewares/auth';
+import prisma from './prisma';
 
 dotenv.config();
 
