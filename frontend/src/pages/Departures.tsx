@@ -212,7 +212,7 @@ const Departures = () => {
           checkboxSelection
           disableRowSelectionOnClick
           onRowSelectionModelChange={(newSelectionModel) => {
-            setSelectionModel(newSelectionModel);
+            setSelectionModel(newSelectionModel as any[]);
           }}
           rowSelectionModel={selectionModel}
           sx={{ border: 'none' }}

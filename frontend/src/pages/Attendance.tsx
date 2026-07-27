@@ -265,7 +265,7 @@ const Attendance = () => {
           checkboxSelection
           disableRowSelectionOnClick
           onRowSelectionModelChange={(newSelectionModel) => {
-            setSelectionModel(newSelectionModel);
+            setSelectionModel(newSelectionModel as any[]);
           }}
           rowSelectionModel={selectionModel}
           sx={{ border: 'none', '& .MuiDataGrid-cell': { borderColor: '#f1f5f9' } }}

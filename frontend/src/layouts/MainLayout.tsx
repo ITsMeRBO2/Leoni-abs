@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, AppBar, Toolbar, Typography, IconButton, Avatar, useTheme } from '@mui/material';
-import DashboardIcon from '@mui/material/Icon/Dashboard'; // Note: using standard @mui/icons-material paths later, just mock for now, wait I should use actual imports
 import { DashboardRounded, TableChartRounded, PersonRemoveRounded, SettingsRounded, LogoutRounded } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 

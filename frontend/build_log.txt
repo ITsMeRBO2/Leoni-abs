@@ -1,0 +1,34 @@
+
+> leoni-abs-frontend@0.0.0 build
+> tsc -b && vite build
+
+src/App.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/layouts/MainLayout.tsx(1,1): error TS6192: All imports in import declaration are unused.
+src/layouts/MainLayout.tsx(4,1): error TS6133: 'DashboardIcon' is declared but its value is never read.
+src/layouts/MainLayout.tsx(4,27): error TS2307: Cannot find module '@mui/material/Icon/Dashboard' or its corresponding type declarations.
+src/pages/Attendance.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/Attendance.tsx(78,66): error TS6133: 'value' is declared but its value is never read.
+src/pages/Attendance.tsx(79,76): error TS6133: 'value' is declared but its value is never read.
+src/pages/Attendance.tsx(80,75): error TS6133: 'value' is declared but its value is never read.
+src/pages/Attendance.tsx(81,74): error TS6133: 'value' is declared but its value is never read.
+src/pages/Attendance.tsx(82,66): error TS6133: 'value' is declared but its value is never read.
+src/pages/Attendance.tsx(83,82): error TS6133: 'value' is declared but its value is never read.
+src/pages/Attendance.tsx(84,64): error TS6133: 'value' is declared but its value is never read.
+src/pages/Attendance.tsx(85,74): error TS6133: 'value' is declared but its value is never read.
+src/pages/Attendance.tsx(268,31): error TS2345: Argument of type 'GridRowSelectionModel' is not assignable to parameter of type 'SetStateAction<any[]>'.
+  The type 'readonly GridRowId[]' is 'readonly' and cannot be assigned to the mutable type 'any[]'.
+src/pages/Attendance.tsx(302,28): error TS6133: 'event' is declared but its value is never read.
+src/pages/Dashboard.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/Dashboard.tsx(4,63): error TS6133: 'Legend' is declared but its value is never read.
+src/pages/Dashboard.tsx(4,92): error TS6133: 'PieChart' is declared but its value is never read.
+src/pages/Dashboard.tsx(4,102): error TS6133: 'Pie' is declared but its value is never read.
+src/pages/Dashboard.tsx(4,107): error TS6133: 'Cell' is declared but its value is never read.
+src/pages/Dashboard.tsx(206,9): error TS6133: 'pieColors' is declared but its value is never read.
+src/pages/Departures.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/Departures.tsx(22,66): error TS6133: 'value' is declared but its value is never read.
+src/pages/Departures.tsx(23,75): error TS6133: 'value' is declared but its value is never read.
+src/pages/Departures.tsx(24,74): error TS6133: 'value' is declared but its value is never read.
+src/pages/Departures.tsx(25,82): error TS6133: 'value' is declared but its value is never read.
+src/pages/Departures.tsx(26,74): error TS6133: 'value' is declared but its value is never read.
+src/pages/Departures.tsx(215,31): error TS2345: Argument of type 'GridRowSelectionModel' is not assignable to parameter of type 'SetStateAction<any[]>'.
+  The type 'readonly GridRowId[]' is 'readonly' and cannot be assigned to the mutable type 'any[]'.
