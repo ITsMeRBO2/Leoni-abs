@@ -5,9 +5,11 @@
       "src": "src/index.ts",
       "use": "@vercel/node",
       "config": {
+        "maxLambdaSize": "50mb",
         "includeFiles": [
-          "prisma/schema.prisma",
-          "node_modules/.prisma/client/**"
+          "prisma/**",
+          "node_modules/.prisma/client/**",
+          "node_modules/@prisma/client/**"
         ]
       }
     }
