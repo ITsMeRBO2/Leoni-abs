@@ -39,15 +39,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Routes without auth
 app.use('/api/auth', authRoutes);
 
-// Apply auth middleware to following routes (unless specific routes bypass it)
-app.use('/api/employees', authenticateToken, employeesRoutes);
-app.use('/api/attendance', authenticateToken, attendanceRoutes);
-app.use('/api/departures', authenticateToken, departuresRoutes);
-app.use('/api', authenticateToken, configRoutes); // settings, saturday-config, public-holidays, families
-app.use('/api', authenticateToken, dashboardRoutes); // dashboard/
-app.use('/api/imports', authenticateToken, importsRoutes);
-app.use('/api', authenticateToken, exportRoutes);
-
 app.get('/api/debug/', (req, res) => {
   res.json({ status: 'ok', message: 'Node.js backend is running.' });
 });
@@ -60,6 +51,15 @@ app.get('/api/health/', async (req: any, res: any) => {
     res.status(500).json({ status: 'error', db: 'disconnected', error: e.message });
   }
 });
+
+// Apply auth middleware to following routes (unless specific routes bypass it)
+app.use('/api/employees', authenticateToken, employeesRoutes);
+app.use('/api/attendance', authenticateToken, attendanceRoutes);
+app.use('/api/departures', authenticateToken, departuresRoutes);
+app.use('/api', authenticateToken, configRoutes); // settings, saturday-config, public-holidays, families
+app.use('/api', authenticateToken, dashboardRoutes); // dashboard/
+app.use('/api/imports', authenticateToken, importsRoutes);
+app.use('/api', authenticateToken, exportRoutes);
 
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   app.listen(port, () => {
