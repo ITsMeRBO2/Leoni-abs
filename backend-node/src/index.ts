@@ -51,6 +51,15 @@ app.get('/api/debug/', (req, res) => {
   res.json({ status: 'ok', message: 'Node.js backend is running.' });
 });
 
+app.get('/api/health/', async (req: any, res: any) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: 'ok', db: 'connected' });
+  } catch (e: any) {
+    res.status(500).json({ status: 'error', db: 'disconnected', error: e.message });
+  }
+});
+
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
