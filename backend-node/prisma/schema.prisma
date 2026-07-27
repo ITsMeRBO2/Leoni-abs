@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int             @id @default(autoincrement())
+  username      String          @unique
+  email         String?         @unique
+  password      String
+  role          String          @default("rh") // 'admin' or 'rh'
+  importHistory ImportHistory[]
+
+  @@map("api_customuser") // Map to existing Django table
+}
+
+model Employee {
+  mle                  String       @id
+  mle_2                String?
+  nom_prenom           String
+  famille              String
+  seg                  String
+  affectation          String
+  cc                   String
+  contrat              String
+  consecutive_absences Int          @default(0)
+  attendances          Attendance[]
+  departures           Departure[]
+
+  @@map("api_employee") // Map to existing Django table
+}
+
+model Attendance {
+  id                 Int       @id @default(autoincrement())
+  employeeId         String    @map("employee_id")
+  date               DateTime  @db.Date
+  heure_entree       DateTime? @db.Time
+  heure_sortie       DateTime? @db.Time
+  heures_travaillees Float     @default(0.0)
+  statut             String
+
+  employee Employee @relation(fields: [employeeId], references: [mle], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@map("api_attendance") // Map to existing Django table
+}
+
+model Settings {
+  id                Int   @id @default(1)
+  min_working_hours Float @default(5.0)
+  disabled_families Json  @default("[]")
+
+  @@map("api_settings") // Map to existing Django table
+}
+
+model SaturdayConfiguration {
+  id           Int      @id @default(autoincrement())
+  date         DateTime @unique @db.Date
+  families_off Json     @default("[]")
+
+  @@map("api_saturdayconfiguration") // Map to existing Django table
+}
+
+model Departure {
+  id             Int      @id @default(autoincrement())
+  employeeId     String   @map("employee_id")
+  date_added     DateTime @db.Date @default(now())
+  absences_count Int
+
+  employee Employee @relation(fields: [employeeId], references: [mle], onDelete: Cascade)
+
+  @@map("api_departure") // Map to existing Django table
+}
+
+model ImportHistory {
+  id                Int      @id @default(autoincrement())
+  date_imported     DateTime @default(now())
+  userId            Int?     @map("user_id")
+  status            String
+  records_processed Int      @default(0)
+  file_name         String
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("api_importhistory") // Map to existing Django table
+}
+
+model PublicHoliday {
+  id          Int      @id @default(autoincrement())
+  date        DateTime @unique @db.Date
+  description String?
+
+  @@map("api_publicholiday") // Map to existing Django table
+}

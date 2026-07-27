@@ -334,8 +334,8 @@ class DashboardView(APIView):
         top_absent_families = all_absent_families[:4]
         
         # Get requested year, default to current year
-        target_year = self.request.query_params.get('year')
-        statut_filter = self.request.query_params.get('statut', 'Absent')
+        target_year = request.query_params.get('year')
+        statut_filter = request.query_params.get('statut', 'Absent')
         if target_year:
             try:
                 curr_year = int(target_year)
@@ -427,9 +427,9 @@ class DashboardView(APIView):
 
 class DashboardWeeklyView(APIView):
     def get(self, request):
-        year = int(self.request.query_params.get('year', datetime.now().year))
-        month = int(self.request.query_params.get('month', datetime.now().month))
-        statut_filter = self.request.query_params.get('statut', 'Absent')
+        year = int(request.query_params.get('year', datetime.now().year))
+        month = int(request.query_params.get('month', datetime.now().month))
+        statut_filter = request.query_params.get('statut', 'Absent')
         import calendar
         _, last_day = calendar.monthrange(year, month)
         
@@ -496,8 +496,8 @@ class DashboardWeeklyView(APIView):
 
 class DashboardDailyView(APIView):
     def get(self, request):
-        date_str = self.request.query_params.get('week_start')
-        statut_filter = self.request.query_params.get('statut', 'Absent')
+        date_str = request.query_params.get('week_start')
+        statut_filter = request.query_params.get('statut', 'Absent')
         if date_str:
             start_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         else:

@@ -16,6 +16,7 @@ env/
 # Environment variables
 .env
 backend/.env
+backend-node/.env
 frontend/.env
 
 # Django
